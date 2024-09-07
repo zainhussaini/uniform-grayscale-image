@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 # constants
-IMAGE_FILE = 'image-rgb.png'
+IMAGE_FILE = 'imgs/image-rgb.png'
 GRAY_MATRIX = (0.299, 0.587, 0.114)
 
 # open file
@@ -115,9 +115,8 @@ b = RGB1[2, :].reshape(img.shape[:-1])
 img = np.dstack((r, g, b))
 
 img_gray = np.array(Image.fromarray(img).convert("L"))
-print(np.min(img_gray))
-print(np.max(img_gray))
+print("resulting gray range:", np.min(img_gray), np.max(img_gray))
 
-Image.open('image-rgb.png').convert("L").save("image-gray.png")
-Image.fromarray(img).save('converted-rgb.png')
-Image.fromarray(img).convert("L").save('converted-gray.png')
+Image.open('imgs/image-rgb.png').convert("L").save("imgs/image-gray.png")
+Image.fromarray(img).save('imgs/converted-rgb.png')
+Image.fromarray(img).convert("L").save('imgs/converted-gray.png')
