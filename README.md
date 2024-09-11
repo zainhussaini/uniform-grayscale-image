@@ -4,7 +4,7 @@ When you take a color image and convert it to grayscale, you lose some informati
 |--------------------------------------------------|-----------------------------------------------------|
 | ![RGB image](imgs/image-rgb.png?raw=true "RGB Image") | ![Gray image](imgs/image-gray.png?raw=true "Gray Image") |
 
-What if you take the RGB image and convert it so that the colors are similar but when converted to a gray cale image it's all the same color?
+What if you take the RGB image and convert it so that the colors are similar but when converted to a grayscale image it's all the same color?
 
 | Converted RGB Image                                                      | Grayscale Image                                         |
 |--------------------------------------------------------------------------|---------------------------------------------------------|
@@ -70,9 +70,9 @@ $$ \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} = x_t + n x_n$$
 
 $x_t$ can be any solution. One obvious one is $(Y_{goal}, Y_{goal}, Y_{goal})$. We should use the solution we found from just scaling the RGB values, and find the minimum $n$ needed to satisfy the constraints.
 
-$x_n$ is the null space of the matrix. It is:
+$x_n$ is the null space of the matrix.
 
-$$ \begin{bmatrix} -0.701 R_0 + 0.587 G_0 + 0.114 B_0 \\\ 0.299 R_0 - 0.413 G_0 + 0.114 B_0 \\\ 0.299 R_0 + 0.587 G_0 + -0.886 B_0 \end{bmatrix} $$
+$$ x_n = \begin{bmatrix} 0.299 & 0.587 & 0.114 \end{bmatrix} \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} 1_{3 \times 1} - \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} $$
 
 The constraints can be written as:
 
