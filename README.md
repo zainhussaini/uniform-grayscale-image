@@ -38,9 +38,7 @@ The idea of "same color" is best represented by preserving the hue, while allowi
 
 The target grayscale value is the average of the original image's grayscale values.
 
-$$ Y = \begin{bmatrix} 0.299 & 0.587 & 0.114 \end{bmatrix}\begin{bmatrix} R_0 & R_1 & R_2 & \dots & R_n \\\ G_0 & G_1 & G_2 & \dots & G_n  \\\ B_0 & B_1 & B_2 & \dots & B_n  \end{bmatrix} \\ $$
-
-$$ Y_{goal} = \bar{Y} $$
+$$ Y_{goal} = \frac{1}{n} \begin{bmatrix} 0.299 & 0.587 & 0.114 \end{bmatrix}\begin{bmatrix} R_0 & R_1 & R_2 & \dots & R_n \\\ G_0 & G_1 & G_2 & \dots & G_n  \\\ B_0 & B_1 & B_2 & \dots & B_n  \end{bmatrix} \begin{bmatrix} 1 & 1 & 1 \end{bmatrix} $$
 
 In the ideal case, for each pixel we can just scale the RGB values by some factor $s$ so that their converted grayscale value is the target.
 
@@ -58,7 +56,7 @@ https://github.com/user-attachments/assets/2361803b-bea7-4377-a29e-2424a3c68a5c
 
 Since RGB can move along the two vectors $(R_0, G_0, B_0)$ and $(1, 1, 1)$, the only vector it can't move along is the cross product of them:
 
-$$ (R_0, G_0, B_0) \times (1, 1, 1) = \begin{bmatrix} G_0 - B_0 & B_0 - R_0 & R_0 - G_0 \end{bmatrix} $$
+$$ \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} \times \begin{bmatrix} 1 \\\ 1 \\\ 1 \end{bmatrix} = \begin{bmatrix} G_0 - B_0 \\\ B_0 - R_0 \\\ R_0 - G_0 \end{bmatrix} $$
 
 Therefore the line of intersection is defined by:
 
@@ -66,26 +64,35 @@ $$ \begin{bmatrix} 0.299 & 0.587 & 0.114 \\\ G_0 - B_0 & B_0 - R_0 & R_0 - G_0 \
 
 Any movement along the line of intersection satisfies the target grayscale and preservation of hue. Since this is an underdetermined system, the solution includes a nullspace vector, and is the following:
 
-$$ \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} = x_t + n x_n$$
+$$ \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} = \hat{X}_t + n \hat{X}_n$$
 
-$x_t$ can be any solution. One obvious one is $(Y_{goal}, Y_{goal}, Y_{goal})$. We should use the solution we found from just scaling the RGB values, and find the minimum $n$ needed to satisfy the constraints.
+$\hat{X}_t$ can be any valid solution, such as $\hat{X}_t = (Y_{goal}, Y_{goal}, Y_{goal})$.
 
-$x_n$ is the null space of the matrix.
+$\hat{X}_n$ is the null space of the matrix and can be calculated by:
 
-$$ x_n = \begin{bmatrix} 0.299 & 0.587 & 0.114 \end{bmatrix} \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} 1_{3 \times 1} - \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} $$
+$$ \hat{X}_n = \left( \begin{bmatrix} 0.299 & 0.587 & 0.114 \end{bmatrix} \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} \right) \begin{bmatrix} 1 \\\ 1 \\\ 1 \end{bmatrix} - \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} $$
+
 
 The constraints can be written as:
 
 $$ \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} \geq \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix}$$
 
-Reduce these matrices to only the rows that failed, resulting in
+We can set up the problem as the following:
+
+$$ \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} (\hat{X}_{start} + n \hat{X}_n) \geq \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix}$$
+
+$\hat{X}_n$ should be negated if necessary in order for it to point into the bounding box.
+
+$$\hat{X}_n \cdot (\hat{X}_{start} - \hat{X}_t)< 0$$
+
+Then the goal is to simply find the lowest required $n$ to solve the inequality constraint.
 
 $$ C \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} \geq d $$
 
 Solve for the required $n$ to make each inequality pass:
 
-$$ n = (d - C x_t) / (C x_n) $$
+$$ \hat{C} = \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} \qquad \hat{D} = \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix} \qquad n = \textrm{max} \left( \frac{(\hat{D} - C \hat{X}_t)}{\hat{C} \hat{X}_n \cdot \textrm{sign}(\hat{C} \hat{X}_n)} \right) $$
 
-Pick the maximum $n$. The solution is:
+The solution is:
 
-$$ \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} = x_t + n x_n$$
+$$ \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} = \hat{X}_{start} + n \hat{X}_n$$
