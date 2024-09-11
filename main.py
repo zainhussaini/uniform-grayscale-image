@@ -36,66 +36,40 @@ def solve_with_cache(r0, g0, b0):
   return solution
 
 def solve(r0, g0, b0):
-  # handle degenerate case where color is purely gray
+  # handle degenerate case where color is purely a shade of gray
   if r0 == b0 == g0:
     return L*np.ones(3)
 
-  # create system of equations to find initial solution
-  # 1) 0.299 r + 0.587 g + 0.114 b = L
-  # 2) r = r0*s
-  # 3) g = g0*s
-  # 4) b = b0*s
+  # solve for scale factor that results in the right grayscale value
+  s = L/(GRAY_MATRIX[0]*r0 + GRAY_MATRIX[1]*g0 + GRAY_MATRIX[2]*b0)
 
-  A = np.array([
-    [*GRAY_MATRIX, 0],
-    [1, 0, 0, -r0],
-    [0, 1, 0, -g0],
-    [0, 0, 1, -b0],
-  ])
+  # solve for initial solution, which might not satisfy inequality constraints.
+  x_start = s*np.array([r0, g0, b0])
 
-  b = np.array([[L], [0], [0], [0]])
-
-  # solution is [r; g; b; s] so extract first three
-  x_start = (np.linalg.inv(A) @ b)[:3,:]
-
-  # check inequality
-  C = np.vstack([
-    np.eye(3),
-    -np.eye(3),
-  ])
-
-  d = np.vstack([
-    np.zeros((3, 1)),
-    -255*np.ones((3, 1)),
-  ])
-
-  # finish if solution satisfies inequality constraint
-  if np.all(C @ x_start >= d):
-    return x_start.flatten()
-
-  # find specific inequality that wasn't satisfied
-  inds = np.where(C @ x_start < d)[0]
-
-  # reduce C and d to 1 dimensional matrices
-  C_reduced = C[inds, :]
-  d_reduced = d[inds, :]
-
-  # find vector of line between two planes
-  x_n = np.array([
-    [((GRAY_MATRIX[0]-1)*r0 + GRAY_MATRIX[1]*g0 + GRAY_MATRIX[2]*b0)],
-    [(GRAY_MATRIX[0]*r0 + (GRAY_MATRIX[1]-1)*g0 + GRAY_MATRIX[2]*b0)],
-    [(GRAY_MATRIX[0]*r0 + GRAY_MATRIX[1]*g0 + (GRAY_MATRIX[2]-1)*b0)],
-  ])
-
-  n = (d_reduced - C_reduced @ x_start)/(C_reduced @ x_n)
-
-  if np.any(n < 0):
-    raise Exception(f"Negative n")
+  # check if result is within bounds
+  if np.all(x_start < 255*np.ones(3)):
+    return x_start
   
+  # find vector that points along line of intersection between grayscale and hue-preserving planes
+  x_n = np.dot(GRAY_MATRIX, np.array([r0, g0, b0])) * np.ones(3) - np.array([r0, g0, b0])
+
+  # point vector towards inside the bounds
+  x_t = L*np.ones(3)
+  if np.dot(x_start - x_t, x_n) > 0:
+    x_n = -x_n
+
+  # solve for n such that C @ (x_start + n*x_n) >= d
+  C = np.vstack((np.eye(3), -np.eye(3)))
+  d = np.array([0, 0, 0, -255, -255, -255])
+  n = (d - C @ x_start)/(C @ x_n) * np.sign(C @ x_n)
+
+  # find maximum value since this will satisfy all limits.
   n = np.max(n)
+
+  # find optimal point
   x_fixed = x_start + n*x_n
 
-  return x_fixed.flatten()
+  return x_fixed
 
 # iterate over every column
 for i in tqdm(range(RGB0.shape[1])):
@@ -115,7 +89,7 @@ b = RGB1[2, :].reshape(img.shape[:-1])
 img = np.dstack((r, g, b))
 
 img_gray = np.array(Image.fromarray(img).convert("L"))
-print("resulting gray range:", np.min(img_gray), np.max(img_gray))
+print(f"resulting gray range: [{np.min(img_gray)}, {np.max(img_gray)}]")
 
 Image.open('imgs/image-rgb.png').convert("L").save("imgs/image-gray.png")
 Image.fromarray(img).save('imgs/converted-rgb.png')
