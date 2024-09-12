@@ -64,32 +64,29 @@ $$ \begin{bmatrix} 0.299 & 0.587 & 0.114 \\\ G_0 - B_0 & B_0 - R_0 & R_0 - G_0 \
 
 Any movement along the line of intersection satisfies the target grayscale and preservation of hue. Since this is an underdetermined system, the solution includes a nullspace vector, and is the following:
 
-$$ \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} = \hat{X}_t + n \hat{X}_n$$
+$$ \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} = \hat{X}_t + n \hat{X}_n $$
 
-$\hat{X}_t$ can be any valid solution, such as $\hat{X}_t = (Y_{goal}, Y_{goal}, Y_{goal})$.
+$` \hat{X}_t `$ can be any valid solution, such as $` \hat{X}_t = (Y_{goal}, Y_{goal}, Y_{goal}) `$.
 
-$\hat{X}_n$ is the null space of the matrix and can be calculated by:
+$` \hat{X}_n `$ is the null space of the matrix and can be calculated by:
 
 $$ \hat{X}_n = \left( \begin{bmatrix} 0.299 & 0.587 & 0.114 \end{bmatrix} \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} \right) \begin{bmatrix} 1 \\\ 1 \\\ 1 \end{bmatrix} - \begin{bmatrix} R_0 \\\ G_0 \\\ B_0 \end{bmatrix} $$
 
-
 The constraints can be written as:
 
-$$ \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} \geq \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix}$$
+$$ \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} \geq \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix} $$
 
 We can set up the problem as the following:
 
-$$ \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} (\hat{X}_{start} + n \hat{X}_n) \geq \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix}$$
+$$ \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} (\hat{X}_{start} + n \hat{X}_n) \geq \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix} $$
 
-$\hat{X}_n$ should be negated if necessary in order for it to point into the bounding box.
+$` \hat{X}_n `$ should be negated if necessary in order for it to point into the bounding box.
 
-$$\hat{X}_n \cdot (\hat{X}_{start} - \hat{X}_t)< 0$$
+```math
+\hat{X}_n \cdot \left( \hat{X}_{start} - \hat{X}_t \right) < 0
+```
 
-Then the goal is to simply find the lowest required $n$ to solve the inequality constraint.
-
-$$ C \begin{bmatrix} R \\\ G \\\ B \end{bmatrix} \geq d $$
-
-Solve for the required $n$ to make each inequality pass:
+Solve for the lowest $n$ to satisfy the inequality constraint:
 
 $$ \hat{C} = \begin{bmatrix} 1 & 0 & 0 \\\ 0 & 1 & 0 \\\ 0 & 0 & 1 \\\ -1 & 0 & 0 \\\ 0 & -1 & 0 \\\ 0 & 0 & -1 \end{bmatrix} \qquad \hat{D} = \begin{bmatrix} 0 \\\ 0 \\\ 0 \\\ -255 \\\ -255 \\\ -255 \end{bmatrix} \qquad n = \textrm{max} \left( \frac{(\hat{D} - C \hat{X}_t)}{\hat{C} \hat{X}_n \cdot \textrm{sign}(\hat{C} \hat{X}_n)} \right) $$
 
