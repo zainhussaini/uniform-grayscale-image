@@ -36,8 +36,6 @@ The idea of "same color" is best represented by preserving the hue, while allowi
 
 # Algorithm
 
-Starting with some RGB value, adding some multiple of itself $(R_0, G_0, B_0)$ changes value while preserving saturation. Adding some multiple of ones $(1, 1, 1)$ changes saturation while preserving value. Both preserve hue. For each pixel in the image, we want to adjust value to get the target grayscale. However sometimes it's not possible to just change the value, so we can also adjust the saturation.
-
 The target grayscale value is the average of the original image's grayscale values.
 
 $$ Y_{goal} = \frac{1}{n} \begin{bmatrix} 0.299 & 0.587 & 0.114 \end{bmatrix}\begin{bmatrix} R_0 & R_1 & R_2 & \dots & R_n \\\ G_0 & G_1 & G_2 & \dots & G_n  \\\ B_0 & B_1 & B_2 & \dots & B_n  \end{bmatrix} \begin{bmatrix} 1 & 1 & 1 \end{bmatrix} $$
